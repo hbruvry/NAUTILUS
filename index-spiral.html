@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Archimedean spiral</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body { margin: 0; }
+			canvas { display: block; }
+		</style>
+	</head>
+	<body>
+		<div id="container"></div>
+		<script type="module">
+			import * as THREE from 'https://unpkg.com/three@0.121.1/build/three.module.js';
+			import { OrbitControls } from 'https://unpkg.com/three@0.121.1/examples/jsm/controls/OrbitControls.js';
+			import { MathUtils } from 'https://unpkg.com/three@0.121.1/build/three.module.js';
+			import Stats from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/stats.module.js';
+			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
+			import { VertexNormalsHelper } from 'https://unpkg.com/three@0.121.1/examples/jsm/helpers/VertexNormalsHelper.js';
+
+			let container, stats;
+			let camera, controls, scene, renderer;
+
+			let spiralLine, spiralHelper;
+			let spiralAngleStep = Math.PI / 90;
+			let spiralSubdivision = 0;
+			let spiralSubdivisionMax = 1024;
+
+			const params = {
+				a: 0.5,
+				b: 1.25,
+				angle: 720,
+			};
+
+			init();
+			animate();
+
+			/*
+			** Spiral functions
+			*/
+
+			function setSpiralNormals( b, angle )
+			{
+				let normals;
+				let theta, phi;
+
+				// Get spiral normals (cf. git)
+				normals = spiralLine.geometry.attributes.normal.array;
+				for ( let i = 0; i < spiralSubdivision; i ++ )
+				{
+					// Find trangent angle deriving the spiral equation
+					theta = i * spiralAngleStep;
+					phi = theta + Math.atan( 1.0 / Math.log( b ) ) - Math.PI / 2.0;
+
+					// Set current spiral normal
+					normals[ i * 3 ] = Math.cos( phi );
+					normals[ i * 3 + 1 ] = Math.sin( phi );
+					normals[ i * 3 + 2 ] = 0;
+				}
+				// Update spiral normals
+				spiralLine.geometry.attributes.normal.needsUpdate = true;
+				spiralHelper.update();
+			}
+
+			function setSpiralPositions( a, b, angle )
+			{
+				let positions;
+				let theta, r;
+
+				// Get spiral positions (cf. git)
+				positions = spiralLine.geometry.attributes.position.array;
+				for ( let i = 0; i < spiralSubdivision; i ++ )
+				{
+					// Find radius resolving the spiral equation
+					theta = i * spiralAngleStep;
+					r = a * Math.pow( b, theta );
+
+					// Set current spiral position
+					positions[ i * 3 ] = r * Math.cos( theta );
+					positions[ i * 3 + 1 ] = r * Math.sin( theta );
+					positions[ i * 3 + 2 ] = 0;
+				}
+				// Update spiral positions
+				spiralLine.geometry.attributes.position.needsUpdate = true;
+			}
+
+			function setSupershapeAttributes()
+			{
+				let a, b, angle;
+
+				a = params.a;
+				b = params.b;
+				angle = THREE.Math.degToRad( params.angle );
+
+				// Set spiral positions and normals
+				setSpiralPositions( a, b, angle );
+				setSpiralNormals( b, angle );
+				spiralLine.geometry.setDrawRange( 0, spiralSubdivision );
+			}
+
+			function setSpiralMesh()
+			{
+				let spiralPositions, spiralNormals;
+				let spiralGeometry, spiralMaterial;
+
+				// Create spiral buffer geometry, add positions and normals attributes
+				spiralPositions = new Float32Array( spiralSubdivisionMax * 3 );
+				spiralNormals = new Float32Array( spiralSubdivisionMax * 3 );
+				spiralGeometry = new THREE.BufferGeometry();
+
+				// Assign spiral positions and normals to geometry
+				spiralGeometry.setAttribute( 'position', new THREE.BufferAttribute( spiralPositions, 3 ) );
+				spiralGeometry.setAttribute( 'normal', new THREE.BufferAttribute( spiralNormals, 3 ) );
+
+				// Create spiral material, add spiral line object to the scene
+				spiralMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
+				spiralLine = new THREE.Line( spiralGeometry, spiralMaterial );
+				scene.add( spiralLine );
+
+				// Create spiral normal helper, add it to the scene
+				spiralHelper = new VertexNormalsHelper( spiralLine, 0.5, 0xff0000, 1 );
+				scene.add( spiralHelper );
+
+				// Set spiral subdivision, ensure it does not exceed max subdivision
+				spiralSubdivision = Math.abs( THREE.Math.degToRad( params.angle ) ) / spiralAngleStep + 1;
+				spiralSubdivision = THREE.Math.clamp( spiralSubdivision, 2, spiralSubdivisionMax );
+
+				// Set spiral draw range
+				spiralLine.geometry.setDrawRange( 0, spiralSubdivision );
+			}
+
+			/*
+			** User interface function
+			*/
+
+			function createGUI()
+			{
+				const gui = new GUI();
+				gui.add( params, 'a', -800, 800, .01 ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'b', 0, 40, .01 ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'angle', -4320, 4320 ).onChange( function () { setSupershapeAttributes() } );
+				gui.open();
+			}
+
+			function init()
+			{
+				container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 4000 );
+				camera.position.z = 50;
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xf8f8ff );
+
+				setSpiralMesh();
+				setSupershapeAttributes();
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				stats = new Stats();
+				container.appendChild( renderer.domElement );
+				container.appendChild( stats.dom );
+
+				createGUI();
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function onWindowResize()
+			{
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();	
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate()
+			{
+				stats.update();
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			function render()
+			{
+				renderer.render( scene, camera );
+			}
+		</script>
+	</body>
+</html>

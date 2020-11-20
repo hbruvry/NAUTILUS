@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Supershape</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body { margin: 0; }
+			canvas { display: block; }
+		</style>
+	</head>
+	<body>
+		<div id="container"></div>
+		<script type="module">
+			import * as THREE from 'https://unpkg.com/three@0.121.1/build/three.module.js';
+			import { OrbitControls } from 'https://unpkg.com/three@0.121.1/examples/jsm/controls/OrbitControls.js';
+			import { MathUtils } from 'https://unpkg.com/three@0.121.1/build/three.module.js';
+			import Stats from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/stats.module.js';
+			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
+			import { VertexNormalsHelper } from 'https://unpkg.com/three@0.121.1/examples/jsm/helpers/VertexNormalsHelper.js';
+
+			let container, stats;
+			let camera, controls, scene, renderer;
+
+			let supershapeLine, supershapeHelper;
+			let supershapeAngleStep = Math.PI / 180;
+			let supershapeSubdivision = 0;
+			let supershapeSubdivisionMax = 2048;
+
+			const params = {
+				a: 1,
+				b: 1,
+				m: 7,
+				n1: 2,
+				n2: 8,
+				n3: 4,
+			};
+
+			init();
+			animate();
+
+			function setSupershapePositions( a, b, m, n1, n2, n3 )
+			{
+				let positions;
+				let r, theta;
+				let result1, result2;
+
+				// Get supershape positions (cf. git)
+				positions = supershapeLine.geometry.attributes.position.array;
+				for ( let i = 0; i < supershapeSubdivision; i ++ )
+				{
+					// Calculate the first part of the supershape equation
+					theta = i * supershapeAngleStep;
+					result1 = Math.cos( m / 4 * theta ) / a;
+					result1 = Math.pow(Math.abs( result1 ), n2);
+
+					// Calculate the second part of the supershape equation
+					result2 = Math.sin( m / 4 * theta ) / b;
+					result2 = Math.pow( Math.abs( result2 ), n3);
+
+					// Find radius resolving the supershape equation
+					r = Math.pow( result1 + result2, 1 / n1 );
+					if ( Math.abs(r) != 0 )
+						r = 1/ r;						
+
+					// Set current supershape line positions
+					positions[ i * 3 ] = r * Math.cos( theta );
+					positions[ i * 3 + 1 ] = r * Math.sin( theta );
+					positions[ i * 3 + 2 ] = 0;
+				}
+				// Update supershape positions
+				supershapeLine.geometry.attributes.position.needsUpdate = true;
+			}
+
+			function setSupershapeNormals()
+			{
+				let positions, normals;
+				let indexCurrent, indexPrev, indexNext;
+				let position, positionPrev, positionNext;
+				let directionPrev, directionNext;
+				let normal;
+
+				// Get supershape positions and normals (cf. git)
+				positions = supershapeLine.geometry.attributes.position.array;
+				normals = supershapeLine.geometry.attributes.normal.array;
+				for ( let i = 0; i < supershapeSubdivision; i ++ )
+				{
+					// Set current, previous and next supershape segment index
+					indexCurrent = i * 3;
+					indexPrev = ( i - 1 ) * 3;
+					if (i == 0)
+						indexPrev = ( supershapeSubdivision - 1 ) * 3;
+					indexNext = ( ( i + 1 ) % supershapeSubdivision ) * 3;
+
+					// Get current, previous and next supershape segment position
+					position = new THREE.Vector3( positions[ indexCurrent ], positions[ indexCurrent + 1 ], positions[ indexCurrent + 2] );
+					positionPrev = new THREE.Vector3( positions[ indexPrev ], positions[ indexPrev + 1 ], positions[ indexPrev + 2] );
+					positionNext = new THREE.Vector3( positions[ indexNext ], positions[ indexNext + 1 ], positions[ indexNext + 2] );
+
+					// Calculate current supershape segment normal
+					directionPrev = positionPrev.clone().sub( position ).normalize();
+					directionNext = position.clone().sub( positionNext ).normalize();
+					normal = directionPrev.clone().add( directionNext ).normalize();
+
+					// Set current supershape segment normals
+					normals[ i * 3 ] = -normal.y;
+					normals[ i * 3 + 1 ] = normal.x;
+					normals[ i * 3 + 2 ] = normal.z;
+				}
+				// Update supershape normals
+				supershapeLine.geometry.attributes.normal.needsUpdate = true;
+				supershapeHelper.update();
+			}
+
+			function setSupershapeAttributes()
+			{
+				let a, b, m, n1, n2, n3;
+
+				a = params.a;
+				b = params.b;
+				m = params.m;
+				n1 = params.n1;
+				n2 = params.n2;
+				n3 = params.n3;
+
+				// Set supershape positions and normals
+				setSupershapePositions( a, b, m, n1, n2, n3 );
+				setSupershapeNormals();
+			}
+
+			function setSupershapeMesh()
+			{
+				let supershapePositions, supershapeNormals;
+				let supershapeGeometry, supershapeMaterial;
+
+				// Set supershape subdivision and ensure it does not exceed max subdivision
+				supershapeSubdivision = 2 * Math.PI / supershapeAngleStep + 1;
+				supershapeSubdivision = THREE.Math.clamp( supershapeSubdivision, 2, supershapeSubdivisionMax );
+			
+				// Create supershape buffer geometry, add positions and normals attributes
+				supershapePositions = new Float32Array( supershapeSubdivision * 3 );
+				supershapeNormals = new Float32Array( supershapeSubdivision * 3 );
+				supershapeGeometry = new THREE.BufferGeometry();
+
+				// Assign supershape positions and normals to geometry
+				supershapeGeometry.setAttribute( 'position', new THREE.BufferAttribute( supershapePositions, 3 ) );
+				supershapeGeometry.setAttribute( 'normal', new THREE.BufferAttribute( supershapeNormals, 3 ) );
+
+				// Create supershape material, add supershape line object to the scene
+				supershapeMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
+				supershapeLine = new THREE.Line( supershapeGeometry, supershapeMaterial );
+				scene.add( supershapeLine );
+
+				supershapeHelper = new VertexNormalsHelper( supershapeLine, 0.1, 0xff0000, 1 );
+				scene.add( supershapeHelper );
+			}
+
+			/*
+			** User interface function
+			*/
+
+			function createGUI()
+			{
+				const gui = new GUI();
+				gui.add( params, 'a', 0, 800, .1 ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'b', 0, 800, .1 ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'm', 0, 32, 1. ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'n1', -40, 40, .1 ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'n2', -40, 40, .1 ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'n3', -40, 40, .1 ).onChange( function () { setSupershapeAttributes() } );
+				var obj = { add:function(){ console.log("clicked") }};
+				gui.add(obj,'add');
+				gui.open();
+			}
+
+			function init()
+			{
+				container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 4000 );
+				camera.position.z = 10;
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xf8f8ff );
+
+				setSupershapeMesh();
+				setSupershapeAttributes();
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				stats = new Stats();
+				container.appendChild( renderer.domElement );
+				container.appendChild( stats.dom );
+
+				createGUI();
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function onWindowResize()
+			{
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();	
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate()
+			{
+				stats.update();
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			function render()
+			{
+				renderer.render( scene, camera );
+			}
+		</script>
+	</body>
+</html>
