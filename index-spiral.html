@@ -29,8 +29,7 @@
 
 			const params = {
 				a: 0.5,
-				b: 1.25,
-				angle: 720,
+				b: 1.25
 			};
 
 			init();
@@ -85,18 +84,16 @@
 				spiralLine.geometry.attributes.position.needsUpdate = true;
 			}
 
-			function setSupershapeAttributes()
+			function setSpiralAttributes()
 			{
-				let a, b, angle;
+				let a, b;
 
 				a = params.a;
 				b = params.b;
-				angle = THREE.Math.degToRad( params.angle );
 
 				// Set spiral positions and normals
-				setSpiralPositions( a, b, angle );
-				setSpiralNormals( b, angle );
-				spiralLine.geometry.setDrawRange( 0, spiralSubdivision );
+				setSpiralPositions( a, b );
+				setSpiralNormals( b );
 			}
 
 			function setSpiralMesh()
@@ -104,9 +101,13 @@
 				let spiralPositions, spiralNormals;
 				let spiralGeometry, spiralMaterial;
 
+				// Set spiral subdivision, ensure it does not exceed max subdivision
+				spiralSubdivision = Math.PI * 4.0 / spiralAngleStep + 1;
+				spiralSubdivision = THREE.Math.clamp( spiralSubdivision, 2, spiralSubdivisionMax );
+
 				// Create spiral buffer geometry, add positions and normals attributes
-				spiralPositions = new Float32Array( spiralSubdivisionMax * 3 );
-				spiralNormals = new Float32Array( spiralSubdivisionMax * 3 );
+				spiralPositions = new Float32Array( spiralSubdivision * 3 );
+				spiralNormals = new Float32Array( spiralSubdivision * 3 );
 				spiralGeometry = new THREE.BufferGeometry();
 
 				// Assign spiral positions and normals to geometry
@@ -121,13 +122,6 @@
 				// Create spiral normal helper, add it to the scene
 				spiralHelper = new VertexNormalsHelper( spiralLine, 0.5, 0xff0000, 1 );
 				scene.add( spiralHelper );
-
-				// Set spiral subdivision, ensure it does not exceed max subdivision
-				spiralSubdivision = Math.abs( THREE.Math.degToRad( params.angle ) ) / spiralAngleStep + 1;
-				spiralSubdivision = THREE.Math.clamp( spiralSubdivision, 2, spiralSubdivisionMax );
-
-				// Set spiral draw range
-				spiralLine.geometry.setDrawRange( 0, spiralSubdivision );
 			}
 
 			/*
@@ -137,9 +131,8 @@
 			function createGUI()
 			{
 				const gui = new GUI();
-				gui.add( params, 'a', -800, 800, .01 ).onChange( function () { setSupershapeAttributes() } );
-				gui.add( params, 'b', 0, 40, .01 ).onChange( function () { setSupershapeAttributes() } );
-				gui.add( params, 'angle', -4320, 4320 ).onChange( function () { setSupershapeAttributes() } );
+				gui.add( params, 'a', -800, 800, .01 ).onChange( function () { setSpiralAttributes() } );
+				gui.add( params, 'b', 0, 40, .01 ).onChange( function () { setSpiralAttributes() } );
 				gui.open();
 			}
 
@@ -154,7 +147,7 @@
 				scene.background = new THREE.Color( 0xf8f8ff );
 
 				setSpiralMesh();
-				setSupershapeAttributes();
+				setSpiralAttributes();
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );

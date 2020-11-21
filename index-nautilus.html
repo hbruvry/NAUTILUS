@@ -21,35 +21,37 @@
 
 			let container, stats;
 			let camera, controls, scene, renderer;
+			let debug = false;
 
-			let spiralLine;
-			let spiralAngleStep = Math.PI / 36;
-			let spiralSubdivision = 2;
+			let spiralLine, spiralHelper;
+			let spiralAngleStep = Math.PI / 30;
+			let spiralSubdivision = 0;
 			let spiralSubdivisionMax = 1024;
 
-			let supershapeLines = [];
-			let supershapeAngleStep = Math.PI / 18;
+			let supershapesLine = [];
+			let supershapesHelper = [];
+			let supershapeAngleStep = Math.PI / 90;
 			let supershapeSubdivision = 2;
 			let supershapeSubdivisionMax = 1024;
 
 			let nautilus, nautilusHelper;
 
 			const params = {
-				shapeAA: 20,
-				shapeAB: 20,
-				shapeAM: 6,
-				shapeAN1: 24,
-				shapeAN2: 20,
-				shapeAN3: 16,
-				shapeBA: 32,
-				shapeBB: 32,
+				shapeRevolution: 6,
+				shapeAA: 1,
+				shapeAB: 1,
+				shapeAM: 7,
+				shapeAN1: 2,
+				shapeAN2: 8,
+				shapeAN3: 4,
+				shapeBA: 1,
+				shapeBB: 1,
 				shapeBM: 7,
-				shapeBN1: 1,
-				shapeBN2: 1,
-				shapeBN3: 1,
-				spiralA: 3,
-				spiralB: .3,
-				spiralAngle: 720
+				shapeBN1: 2,
+				shapeBN2: 8,
+				shapeBN3: 4,
+				spiralA: 0.6,
+				spiralB: 1.2
 			};
 
 			init();
@@ -63,32 +65,33 @@
 				normals = nautilus.geometry.attributes.normal.array;
 				for ( let i = 0; i < spiralSubdivisionMax; i ++ )
 				{
-					let supershapePositions = supershapeLines[ i ].geometry.attributes.position.array;
-					let supershapeNormals = supershapeLines[ i ].geometry.attributes.normal.array;
+					let supershapePositions = supershapesLine[ i ].geometry.attributes.position.array;
+					let supershapeNormals = supershapesLine[ i ].geometry.attributes.normal.array;
 					for ( let j = 0; j < supershapeSubdivision; j ++ )
 					{
-						supershapeLines[ i ].updateMatrixWorld();
+						supershapesLine[ i ].updateMatrixWorld();
 						let vertex = new THREE.Vector3( supershapePositions[ j * 3 ], supershapePositions[ j * 3 + 1 ], supershapePositions[ j * 3 + 2 ] );
-						vertex.applyMatrix4( supershapeLines[ i ].matrixWorld );
+						vertex.applyMatrix4( supershapesLine[ i ].matrixWorld );
 						positions[ i * ( supershapeSubdivision + 1 ) * 3 + j * 3 ] = vertex.x;
 						positions[ i * ( supershapeSubdivision + 1 ) * 3 + j * 3 + 1 ] = vertex.y;
 						positions[ i * ( supershapeSubdivision + 1 ) * 3 + j * 3 + 2 ] = vertex.z;
 
 						let normal = new THREE.Vector3( supershapeNormals[ j * 3 ], supershapeNormals[ j * 3 + 1 ], supershapeNormals[ j * 3 + 2 ] );
-						normal.applyQuaternion( supershapeLines[ i ].quaternion );
+						normal.applyQuaternion( supershapesLine[ i ].quaternion );
 						normals[ i * ( supershapeSubdivision + 1 ) * 3 + j * 3 ] = normal.x;
 						normals[ i * ( supershapeSubdivision + 1 ) * 3 + j * 3 + 1 ] = normal.y;
 						normals[ i * ( supershapeSubdivision + 1 ) * 3 + j * 3 + 2 ] = normal.z;
 					}
 					let vertex = new THREE.Vector3( supershapePositions[ 0 ], supershapePositions[ 1 ], supershapePositions[ 2 ] );
-					supershapeLines[ i ].localToWorld( vertex );
+					supershapesLine[ i ].localToWorld( vertex );
 					positions[ i * ( supershapeSubdivision + 1 ) * 3 + supershapeSubdivision * 3 ] = vertex.x;
 					positions[ i * ( supershapeSubdivision + 1 ) * 3 + supershapeSubdivision * 3 + 1 ] = vertex.y;
 					positions[ i * ( supershapeSubdivision + 1 ) * 3 + supershapeSubdivision * 3 + 2 ] = vertex.z;
 				}
 				nautilus.geometry.attributes.position.needsUpdate = true;
 				nautilus.geometry.attributes.normal.needsUpdate = true;
-				nautilusHelper.update();
+				if (debug)
+					nautilusHelper.update();
 			}
 
 			function setNautilusMesh()
@@ -99,9 +102,9 @@
 				nautilus.receiveShadow = true;
 				nautilus.castShadow = true;
 				scene.add( nautilus );
-				nautilusHelper = new VertexNormalsHelper( nautilus, 10, 0xff0000, 1 );
-				scene.add( nautilusHelper );
-				nautilusHelper.update();
+				nautilusHelper = new VertexNormalsHelper( nautilus, 0.1, 0x0000ff, 1 );
+				if (debug)
+					scene.add( nautilusHelper );
 			}
 
 			/*
@@ -115,7 +118,7 @@
 				let result1, result2;
 
 				// Get supershape positions (cf. git)
-				positions = supershapeLines[ index ].geometry.attributes.position.array;
+				positions = supershapesLine[ index ].geometry.attributes.position.array;
 				for ( let i = 0; i < supershapeSubdivision; i ++ )
 				{
 					// Calculate the first part of the supershape equation
@@ -138,7 +141,7 @@
 					positions[ i * 3 + 2 ] = 0;
 				}
 				// Update supershape positions
-				supershapeLines[ index ].geometry.attributes.position.needsUpdate = true;
+				supershapesLine[ index ].geometry.attributes.position.needsUpdate = true;
 			}
 
 			function setSupershapeNormals( index )
@@ -150,8 +153,8 @@
 				let normal;
 
 				// Get supershape positions and normals (cf. git)
-				positions = supershapeLines[ index ].geometry.attributes.position.array;
-				normals = supershapeLines[ index ].geometry.attributes.normal.array;
+				positions = supershapesLine[ index ].geometry.attributes.position.array;
+				normals = supershapesLine[ index ].geometry.attributes.normal.array;
 				for ( let i = 0; i < supershapeSubdivision; i ++ )
 				{
 					// Set current, previous and next supershape segment index
@@ -170,8 +173,6 @@
 					directionPrev = positionPrev.clone().sub( position ).normalize();
 					directionNext = position.clone().sub( positionNext ).normalize();
 					normal = directionPrev.clone().add( directionNext ).normalize();
-					if (i == 0 || i == supershapeSubdivision - 1 )
-						normal = new THREE.Vector3( 1.0, 1.0, 1.0 );
 
 					// Set current supershape segment normals
 					normals[ i * 3 ] = -normal.y;
@@ -179,28 +180,30 @@
 					normals[ i * 3 + 2 ] = normal.z;
 				}
 				// Update supershape normals
-				supershapeLines[ index ].geometry.attributes.normal.needsUpdate = true;
+				supershapesLine[ index ].geometry.attributes.normal.needsUpdate = true;
 			}
 
 			function setSupershapesAttributes()
 			{
-				let normIndex;
+				let revolutionAngle, normRevolution;
 				let spiralPositions, spiralNormals, spiralAngle;
 				let a, b, m, n1, n2, n3;
 
+				revolutionAngle = Math.PI * 2.0 * params.shapeRevolution;
 				// Get spiral positions and normals
 				spiralPositions = spiralLine.geometry.attributes.position.array;
 				spiralNormals = spiralLine.geometry.attributes.normal.array;
 				for ( let i = 0; i < spiralSubdivisionMax; i ++ )
 				{
 					// Set and lerp supershape variables from parameters
-					normIndex = i / spiralSubdivision;
-					a = THREE.Math.lerp(params.shapeAA, params.shapeBA, normIndex);
-					b = THREE.Math.lerp(params.shapeAB, params.shapeBB, normIndex);
-					m = THREE.Math.lerp(params.shapeAM, params.shapeBM, normIndex);
-					n1 = THREE.Math.lerp(params.shapeAN1, params.shapeBN1, normIndex);
-					n2 = THREE.Math.lerp(params.shapeAN2, params.shapeBN2, normIndex);
-					n3 = THREE.Math.lerp(params.shapeAN3, params.shapeBN3, normIndex);
+					normRevolution = i / spiralSubdivision * revolutionAngle;
+					normRevolution = Math.abs( Math.sin( normRevolution ) );
+					a = THREE.Math.lerp(params.shapeAA, params.shapeBA, normRevolution);
+					b = THREE.Math.lerp(params.shapeAB, params.shapeBB, normRevolution);
+					m = THREE.Math.lerp(params.shapeAM, params.shapeBM, normRevolution);
+					n1 = THREE.Math.lerp(params.shapeAN1, params.shapeBN1, normRevolution);
+					n2 = THREE.Math.lerp(params.shapeAN2, params.shapeBN2, normRevolution);
+					n3 = THREE.Math.lerp(params.shapeAN3, params.shapeBN3, normRevolution);
 
 					// Set supershape positions and normals
 					setSupershapePositions( i, a, b, m, n1, n2, n3 );
@@ -212,8 +215,10 @@
 						spiralAngle += Math.PI;
 		
 					// Translate supershape at current spiral segment position, rotate it to match normal angle
-					supershapeLines[ i ].rotation.set( Math.PI / 2, spiralAngle, 0 );
-					supershapeLines[ i ].position.set( spiralPositions[ i * 3 ], spiralPositions[ i * 3 + 1 ], spiralPositions[ i * 3 + 2 ] );
+					supershapesLine[ i ].rotation.set( Math.PI / 2, spiralAngle, 0 );
+					supershapesLine[ i ].position.set( spiralPositions[ i * 3 ], spiralPositions[ i * 3 + 1 ], spiralPositions[ i * 3 + 2 ] );
+					if (debug)
+						supershapesHelper[ i ].update();
 				}
 			}
 
@@ -238,8 +243,13 @@
 
 					// Create supershape material, add supershape line object to the scene
 					supershapeMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
-					supershapeLines.push( new THREE.Line( supershapeGeometry, supershapeMaterial ) );
-					// scene.add( supershapeLines[ i ] );
+					supershapesLine.push( new THREE.Line( supershapeGeometry, supershapeMaterial ) );
+					scene.add( supershapesLine[ i ] );
+
+					// Create supershape helper, add it to the scene
+					supershapesHelper.push(  new VertexNormalsHelper( supershapesLine[ i ], 0.2, 0xff0000, 1 ) );
+					if (debug)
+						scene.add( supershapesHelper[ i ] );
 				}
 			}
 
@@ -253,7 +263,7 @@
 			** Spiral functions
 			*/
 
-			function setSpiralNormals( angle )
+			function setSpiralNormals( b )
 			{
 				let normals;
 				let theta, phi;
@@ -264,7 +274,7 @@
 				{
 					// Find trangent angle deriving the spiral equation
 					theta = i * spiralAngleStep;
-					phi = theta + Math.atan(theta) - Math.PI / 2;
+					phi = theta + Math.atan( 1.0 / Math.log( b ) ) - Math.PI / 2.0;
 
 					// Set current spiral normal
 					normals[ i * 3 ] = Math.cos( phi );
@@ -273,9 +283,11 @@
 				}
 				// Update spiral normals
 				spiralLine.geometry.attributes.normal.needsUpdate = true;
+				if (debug)
+					spiralHelper.update();
 			}
 
-			function setSpiralPositions( a, b, angle )
+			function setSpiralPositions( a, b )
 			{
 				let positions;
 				let theta, r;
@@ -286,7 +298,7 @@
 				{
 					// Find radius resolving the spiral equation
 					theta = i * spiralAngleStep;
-					r = a + Math.pow( 2.71828, b * theta );
+					r = a * Math.pow( b, theta );
 
 					// Set current spiral position
 					positions[ i * 3 ] = r * Math.cos( theta );
@@ -297,14 +309,37 @@
 				spiralLine.geometry.attributes.position.needsUpdate = true;
 			}
 
+			function setSpiralAttributes()
+			{
+				let a, b;
+
+				a = params.spiralA;
+				b = params.spiralB;
+
+				// Set spiral positions and normals
+				setSpiralPositions( a, b );
+				setSpiralNormals( b );
+			}
+
+			function updateSpiral()
+			{
+				setSpiralAttributes();
+				setSupershapesAttributes();
+				setNautilusAttributes();
+			}
+
 			function setSpiralMesh()
 			{
 				let spiralPositions, spiralNormals;
 				let spiralGeometry, spiralMaterial;
 
+				// Set spiral subdivision, ensure it does not exceed max subdivision
+				spiralSubdivision = Math.PI * 4.0 / spiralAngleStep + 1;
+				spiralSubdivision = THREE.Math.clamp( spiralSubdivision, 2, spiralSubdivisionMax );
+
 				// Create spiral buffer geometry, add positions and normals attributes
-				spiralPositions = new Float32Array( spiralSubdivisionMax * 3 );
-				spiralNormals = new Float32Array( spiralSubdivisionMax * 3 );
+				spiralPositions = new Float32Array( spiralSubdivision * 3 );
+				spiralNormals = new Float32Array( spiralSubdivision * 3 );
 				spiralGeometry = new THREE.BufferGeometry();
 
 				// Assign spiral positions and normals to geometry
@@ -314,32 +349,12 @@
 				// Create spiral material, add spiral line object to the scene
 				spiralMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
 				spiralLine = new THREE.Line( spiralGeometry, spiralMaterial );
+				scene.add( spiralLine );
 
-				// Set spiral subdivision, ensure it does not exceed max subdivision
-				spiralSubdivision = Math.abs( THREE.Math.degToRad( params.spiralAngle ) ) / spiralAngleStep + 1;
-				spiralSubdivision = THREE.Math.clamp( spiralSubdivision, 2, spiralSubdivisionMax );
-
-				// Set spiral draw range
-				spiralLine.geometry.setDrawRange( 0, spiralSubdivision );
-			}
-
-			function updateSpiral()
-			{
-				let a, b, angle;
-
-				// Set spiral variables from parameters
-				a = params.spiralA;
-				b = params.spiralB;
-				angle = THREE.Math.degToRad( params.spiralAngle );
-
-				// Update spiral positions and normals
-				setSpiralPositions( a, b, angle );
-				setSpiralNormals( angle );
-				spiralLine.geometry.setDrawRange( 0, spiralSubdivision );
-
-				// Update supershapes and nautilus attributes
-				setSupershapesAttributes();
-				setNautilusAttributes();
+				// Create spiral normal helper, add it to the scene
+				spiralHelper = new VertexNormalsHelper( spiralLine, 0.1, 0xff0000, 1 );
+				if (debug)
+					scene.add( spiralHelper );
 			}
 
 			/*
@@ -349,10 +364,12 @@
 			function createGUI()
 			{
 				let gui;
-				let folderSpiral, folderSupershapeA, folderSupershapeB;
+				let folderNautilus, folderSpiral, folderSupershapeA, folderSupershapeB;
 				
 				gui = new GUI();
 
+				folderNautilus = gui.addFolder( 'Nautilus' );
+				folderNautilus.add( params, 'shapeRevolution', 0, 32, 1. ).name( 'revolutions' ).onChange( function () { updateSupershapes() } );
 				// Set first supershape folder and parameters
 				folderSupershapeA = gui.addFolder( 'Supershape A' );
 				folderSupershapeA.add( params, 'shapeAA', 0, 800, .1 ).name( 'a' ).onChange( function () { updateSupershapes() } );
@@ -375,9 +392,8 @@
 
 				// Set spiral folder and parameters
 				folderSpiral = gui.addFolder( 'Spiral' );
-				folderSpiral.add( params, 'spiralA', 0, 800, .1 ).name( 'a' ).onChange( function () { updateSpiral() } );
-				folderSpiral.add( params, 'spiralB', 0, 800, .1 ).name( 'b' ).onChange( function () { updateSpiral() } );
-				folderSpiral.add( params, 'spiralAngle', -4320, 4320, 1. ).name( 'angle' ).onChange( function () { updateSpiral() } );
+				folderSpiral.add( params, 'spiralA', 0, 800, .01 ).name( 'a' ).onChange( function () { updateSpiral() } );
+				folderSpiral.add( params, 'spiralB', 0, 800, .01 ).name( 'b' ).onChange( function () { updateSpiral() } );
 				folderSpiral.open();
 			}
 
@@ -390,16 +406,12 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 4000 );
-				camera.position.z = 2500;
+				camera.position.z = 50;
 
 				controls = new OrbitControls( camera, container );
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0x000000 );
-
-				// Lights
-				const hemiLight = new THREE.HemisphereLight( 0x443333, 0x111122 );
-				scene.add( hemiLight );
+				scene.background = new THREE.Color( 0xf8f8ff );
 
 				const spotLight = new THREE.SpotLight();
 				spotLight.angle = Math.PI / 16;
@@ -409,9 +421,8 @@
 				scene.add( spotLight );
 
 				setSpiralMesh();
-				setSpiralPositions( params.spiralA, params.spiralB, THREE.Math.degToRad( params.spiralAngle ) );
-				setSpiralNormals( THREE.Math.degToRad( params.spiralAngle ) );
-				
+				setSpiralAttributes();
+
 				setSupershapesMesh();
 				setSupershapesAttributes();
 
