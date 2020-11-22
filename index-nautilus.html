@@ -18,40 +18,50 @@
 			import Stats from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/stats.module.js';
 			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
 			import { VertexNormalsHelper } from 'https://unpkg.com/three@0.121.1/examples/jsm/helpers/VertexNormalsHelper.js';
+			import { EXRLoader } from 'https://unpkg.com/three@0.121.1/examples/jsm/loaders/EXRLoader.js';
 
 			let container, stats;
 			let camera, controls, scene, renderer;
 			let debug = false;
 
 			let spiralLine, spiralHelper;
-			let spiralAngleStep = Math.PI / 30;
+			let spiralAngleStep = Math.PI / 120;
 			let spiralSubdivision = 0;
 			let spiralSubdivisionMax = 1024;
 
 			let supershapesLine = [];
 			let supershapesHelper = [];
-			let supershapeAngleStep = Math.PI / 90;
+			let supershapeAngleStep = Math.PI / 360;
 			let supershapeSubdivision = 2;
 			let supershapeSubdivisionMax = 1024;
 
 			let nautilus, nautilusHelper;
 
+			/*
+			** TO CHECK
+			*/
+
+			let pngCubeRenderTarget, exrCubeRenderTarget;
+			let pngBackground, exrBackground;
+
+			//
+
 			const params = {
 				shapeRevolution: 6,
 				shapeAA: 1,
 				shapeAB: 1,
-				shapeAM: 7,
-				shapeAN1: 2,
-				shapeAN2: 8,
-				shapeAN3: 4,
+				shapeAM: 0,
+				shapeAN1: 1,
+				shapeAN2: 1,
+				shapeAN3: 1,
 				shapeBA: 1,
 				shapeBB: 1,
-				shapeBM: 7,
-				shapeBN1: 2,
-				shapeBN2: 8,
-				shapeBN3: 4,
-				spiralA: 0.6,
-				spiralB: 1.2
+				shapeBM: 0,
+				shapeBN1: 1,
+				shapeBN2: 1,
+				shapeBN3: 1,
+				spiralA: 1.0,
+				spiralB: 0.128
 			};
 
 			init();
@@ -90,21 +100,51 @@
 				}
 				nautilus.geometry.attributes.position.needsUpdate = true;
 				nautilus.geometry.attributes.normal.needsUpdate = true;
+				nautilus.rotation.set( Math.PI, 0.0, 3.0 * Math.PI / 2.0 )
 				if (debug)
 					nautilusHelper.update();
 			}
 
+			function randomizeNautilus()
+			{
+				params.shapeRevolution = THREE.MathUtils.randInt( 1, 16 );
+				randomizeSupershapes(0);
+				randomizeSupershapes(1);
+				updateSupershapes();
+			}
+
 			function setNautilusMesh()
 			{
+				/*
+				var r = "https://threejs.org/examples/textures/cube/Bridge2/";
+				var urls = [ r + "posx.jpg", r + "negx.jpg",
+										r + "posy.jpg", r + "negy.jpg",
+										r + "posz.jpg", r + "negz.jpg" ];
+										
+				var textureCube = new THREE.CubeTextureLoader().load( urls );
+				textureCube.format = THREE.RGBFormat;
+				*/
+
 				let nautilusGeometry = new THREE.CylinderBufferGeometry( 2, 2, 8, supershapeSubdivision, spiralSubdivisionMax - 1, true );
-				let nautilusMaterial = new THREE.MeshPhysicalMaterial( { side : THREE.DoubleSide } );
+				// let nautilusMaterial = new THREE.MeshBasicMaterial( { color: 0xc0c0c0, side : THREE.DoubleSide/*, envMap: textureCube, combine: THREE.MixOperation, reflectivity: 0.5 */} );
+				
+				let nautilusMaterial = new THREE.MeshStandardMaterial( {
+					color: 0xc0c0ff,
+					metalness: 0.875,
+					roughness: 0.125,
+					envMapIntensity: 1.0,
+					side : THREE.DoubleSide
+				} );
+
 				nautilus = new THREE.Mesh( nautilusGeometry, nautilusMaterial );
 				nautilus.receiveShadow = true;
 				nautilus.castShadow = true;
 				scene.add( nautilus );
-				nautilusHelper = new VertexNormalsHelper( nautilus, 0.1, 0x0000ff, 1 );
 				if (debug)
+				{
+					nautilusHelper = new VertexNormalsHelper( nautilus, 0.1, 0x0000ff, 1 );
 					scene.add( nautilusHelper );
+				}
 			}
 
 			/*
@@ -189,7 +229,7 @@
 				let spiralPositions, spiralNormals, spiralAngle;
 				let a, b, m, n1, n2, n3;
 
-				revolutionAngle = Math.PI * 2.0 * params.shapeRevolution;
+				revolutionAngle = Math.PI * 16.0 / params.shapeRevolution;
 				// Get spiral positions and normals
 				spiralPositions = spiralLine.geometry.attributes.position.array;
 				spiralNormals = spiralLine.geometry.attributes.normal.array;
@@ -214,12 +254,38 @@
 					if (spiralNormals[ i * 3 ] < 0)
 						spiralAngle += Math.PI;
 		
+					let scaleGoldenRatio = new THREE.Vector3( spiralPositions[ i * 3 ], spiralPositions[ i * 3 + 1 ], spiralPositions[ i * 3 + 2 ] ).distanceTo( new THREE.Vector3( ) );
+					scaleGoldenRatio = scaleGoldenRatio / 1.618034;
 					// Translate supershape at current spiral segment position, rotate it to match normal angle
+					supershapesLine[ i ].scale.set( scaleGoldenRatio, scaleGoldenRatio, scaleGoldenRatio );
 					supershapesLine[ i ].rotation.set( Math.PI / 2, spiralAngle, 0 );
 					supershapesLine[ i ].position.set( spiralPositions[ i * 3 ], spiralPositions[ i * 3 + 1 ], spiralPositions[ i * 3 + 2 ] );
 					if (debug)
 						supershapesHelper[ i ].update();
 				}
+			}
+
+			function randomizeSupershapes( i )
+			{
+				if ( i == 0 )
+				{
+					params.shapeAA = 1.0;
+					params.shapeAB = 1.0;
+					params.shapeAM = THREE.MathUtils.randInt( 0, 8 );
+					params.shapeAN1 = THREE.MathUtils.randFloat( 0.0, 16.0 );
+					params.shapeAN2 = THREE.MathUtils.randFloat( 0.0, 16.0 );
+					params.shapeAN3 = THREE.MathUtils.randFloat( 0.0, 16.0 );
+				}
+				else if ( i == 1 )
+				{
+					params.shapeBA = 1.0;
+					params.shapeBB = 1.0;
+					params.shapeBM = THREE.MathUtils.randInt( 0, 8 );
+					params.shapeBN1 = THREE.MathUtils.randFloat( 0.0, 16.0 );
+					params.shapeBN2 = THREE.MathUtils.randFloat( 0.0, 16.0 );
+					params.shapeBN3 = THREE.MathUtils.randFloat( 0.0, 16.0 );
+				}
+				return ;
 			}
 
 			function setSupershapesMesh()
@@ -244,12 +310,13 @@
 					// Create supershape material, add supershape line object to the scene
 					supershapeMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
 					supershapesLine.push( new THREE.Line( supershapeGeometry, supershapeMaterial ) );
-					scene.add( supershapesLine[ i ] );
-
-					// Create supershape helper, add it to the scene
-					supershapesHelper.push(  new VertexNormalsHelper( supershapesLine[ i ], 0.2, 0xff0000, 1 ) );
 					if (debug)
+					{
+						scene.add( supershapesLine[ i ] );
+						// Create supershape helper, add it to the scene
+						supershapesHelper.push(  new VertexNormalsHelper( supershapesLine[ i ], 0.2, 0xff0000, 1 ) );
 						scene.add( supershapesHelper[ i ] );
+					}
 				}
 			}
 
@@ -274,7 +341,7 @@
 				{
 					// Find trangent angle deriving the spiral equation
 					theta = i * spiralAngleStep;
-					phi = theta + Math.atan( 1.0 / Math.log( b ) ) - Math.PI / 2.0;
+					phi = theta + Math.atan( 1.0 / b ) - Math.PI / 2.0;
 
 					// Set current spiral normal
 					normals[ i * 3 ] = Math.cos( phi );
@@ -298,7 +365,7 @@
 				{
 					// Find radius resolving the spiral equation
 					theta = i * spiralAngleStep;
-					r = a * Math.pow( b, theta );
+					r = a * Math.pow( 2.718281, b * theta );
 
 					// Set current spiral position
 					positions[ i * 3 ] = r * Math.cos( theta );
@@ -334,7 +401,7 @@
 				let spiralGeometry, spiralMaterial;
 
 				// Set spiral subdivision, ensure it does not exceed max subdivision
-				spiralSubdivision = Math.PI * 4.0 / spiralAngleStep + 1;
+				spiralSubdivision = Math.PI * 16.0 / spiralAngleStep + 1;
 				spiralSubdivision = THREE.Math.clamp( spiralSubdivision, 2, spiralSubdivisionMax );
 
 				// Create spiral buffer geometry, add positions and normals attributes
@@ -349,12 +416,13 @@
 				// Create spiral material, add spiral line object to the scene
 				spiralMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
 				spiralLine = new THREE.Line( spiralGeometry, spiralMaterial );
-				scene.add( spiralLine );
-
-				// Create spiral normal helper, add it to the scene
-				spiralHelper = new VertexNormalsHelper( spiralLine, 0.1, 0xff0000, 1 );
 				if (debug)
+				{
+					scene.add( spiralLine );
+					// Create spiral normal helper, add it to the scene
+					spiralHelper = new VertexNormalsHelper( spiralLine, 0.1, 0xff0000, 1 );
 					scene.add( spiralHelper );
+				}
 			}
 
 			/*
@@ -365,35 +433,44 @@
 			{
 				let gui;
 				let folderNautilus, folderSpiral, folderSupershapeA, folderSupershapeB;
+				var randomize;
 				
 				gui = new GUI();
-
+				// Set nautilus folder and parameters
 				folderNautilus = gui.addFolder( 'Nautilus' );
-				folderNautilus.add( params, 'shapeRevolution', 0, 32, 1. ).name( 'revolutions' ).onChange( function () { updateSupershapes() } );
+				folderNautilus.add( params, 'shapeRevolution', 1, 16, 1. ).name( 'revolutions' ).listen().onChange( function () { updateSupershapes() } );
+				randomize = { add:function(){ randomizeNautilus(); } };
+				folderNautilus.add( randomize, 'add' ).name( 'randomize' );
+				folderNautilus.open();
+				
 				// Set first supershape folder and parameters
 				folderSupershapeA = gui.addFolder( 'Supershape A' );
-				folderSupershapeA.add( params, 'shapeAA', 0, 800, .1 ).name( 'a' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeA.add( params, 'shapeAB', 0, 800, .1 ).name( 'b' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeA.add( params, 'shapeAM', 0, 32, 1. ).name( 'm' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeA.add( params, 'shapeAN1', -40, 40, .1 ).name( 'n1' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeA.add( params, 'shapeAN2', -40, 40, .1 ).name( 'n2' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeA.add( params, 'shapeAN3', -40, 40, .1 ).name( 'n3' ).onChange( function () { updateSupershapes() } );
+				folderSupershapeA.add( params, 'shapeAA', 0.01, 1, .01 ).name( 'a' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeA.add( params, 'shapeAB', 0.01, 1, .01 ).name( 'b' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeA.add( params, 'shapeAM', 0, 8, 1. ).name( 'm' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeA.add( params, 'shapeAN1', 0, 16, .1 ).name( 'n1' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeA.add( params, 'shapeAN2', 0, 16, .1 ).name( 'n2' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeA.add( params, 'shapeAN3', 0, 16, .1 ).name( 'n3' ).listen().onChange( function () { updateSupershapes() } );
+				randomize = { add:function(){ randomizeSupershapes(0); updateSupershapes(); } };
+				folderSupershapeA.add( randomize, 'add' ).name( 'randomize' );
 				folderSupershapeA.open();
 
 				// Set second supershape folder and parameters
 				folderSupershapeB = gui.addFolder( 'Supershape B' );
-				folderSupershapeB.add( params, 'shapeBA', 0, 800, .1 ).name( 'a' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeB.add( params, 'shapeBB', 0, 800, .1 ).name( 'b' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeB.add( params, 'shapeBM', 0, 32, 1. ).name( 'm' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeB.add( params, 'shapeBN1', -40, 40, .1 ).name( 'n1' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeB.add( params, 'shapeBN2', -40, 40, .1 ).name( 'n2' ).onChange( function () { updateSupershapes() } );
-				folderSupershapeB.add( params, 'shapeBN3', -40, 40, .1 ).name( 'n3' ).onChange( function () { updateSupershapes() } );
+				folderSupershapeB.add( params, 'shapeBA', 0.01, 1, .01 ).name( 'a' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeB.add( params, 'shapeBB', 0.01, 1, .01 ).name( 'b' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeB.add( params, 'shapeBM', 0, 8, 1. ).name( 'm' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeB.add( params, 'shapeBN1', 0, 16, .1 ).name( 'n1' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeB.add( params, 'shapeBN2', 0, 16, .1 ).name( 'n2' ).listen().onChange( function () { updateSupershapes() } );
+				folderSupershapeB.add( params, 'shapeBN3', 0, 16, .1 ).name( 'n3' ).listen().onChange( function () { updateSupershapes() } );
+				randomize = { add:function(){ randomizeSupershapes(1); updateSupershapes(); } };
+				folderSupershapeB.add( randomize, 'add' ).name( 'randomize' );;
 				folderSupershapeB.open();
 
 				// Set spiral folder and parameters
 				folderSpiral = gui.addFolder( 'Spiral' );
-				folderSpiral.add( params, 'spiralA', 0, 800, .01 ).name( 'a' ).onChange( function () { updateSpiral() } );
-				folderSpiral.add( params, 'spiralB', 0, 800, .01 ).name( 'b' ).onChange( function () { updateSpiral() } );
+				folderSpiral.add( params, 'spiralA', 0, 8.0, .001 ).name( 'a' ).onChange( function () { updateSpiral() } );
+				folderSpiral.add( params, 'spiralB', 0, 8.0, .001 ).name( 'b' ).onChange( function () { updateSpiral() } );
 				folderSpiral.open();
 			}
 
@@ -406,7 +483,7 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 4000 );
-				camera.position.z = 50;
+				camera.position.z = 200;
 
 				controls = new OrbitControls( camera, container );
 
@@ -420,6 +497,7 @@
 				spotLight.position.set( - 1000, 1000, 1000 );
 				scene.add( spotLight );
 
+
 				setSpiralMesh();
 				setSpiralAttributes();
 
@@ -429,13 +507,54 @@
 				setNautilusMesh();
 				setNautilusAttributes();
 
+				/*
+				** TO CHECK
+				*/
+
+				THREE.DefaultLoadingManager.onLoad = function ( ) { pmremGenerator.dispose(); };
+
+				new EXRLoader()
+					.setDataType( THREE.UnsignedByteType )
+					.load( 'https://threejs.org/examples/textures/piz_compressed.exr', function ( texture ) {
+						exrCubeRenderTarget = pmremGenerator.fromEquirectangular( texture );
+						exrBackground = exrCubeRenderTarget.texture;
+						texture.dispose();
+					} );
+
+				new THREE.TextureLoader().load( 'https://threejs.org/examples/textures/equirectangular.png', function ( texture ) {					texture.encoding = THREE.sRGBEncoding;
+					pngCubeRenderTarget = pmremGenerator.fromEquirectangular( texture );
+					pngBackground = pngCubeRenderTarget.texture;
+					texture.dispose();
+				} );
+
+				//
+
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
+
+				/*
+				** TO CHECK
+				*/
+
+				const pmremGenerator = new THREE.PMREMGenerator( renderer );
+				pmremGenerator.compileEquirectangularShader();
+
+				//
+
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 				stats = new Stats();
 				container.appendChild( renderer.domElement );
 				container.appendChild( stats.dom );
+
+				/*
+				** TO CHECK
+				*/
+
+				renderer.toneMapping = THREE.ACESFilmicToneMapping;
+				renderer.outputEncoding = THREE.sRGBEncoding;
+
+				//
 
 				createGUI();
 
@@ -459,6 +578,23 @@
 
 			function render()
 			{
+				/*
+				** TO CHECK
+				*/
+
+				let newEnvMap = nautilus.material.envMap;
+				let background = scene.background;
+
+				newEnvMap = exrCubeRenderTarget ? exrCubeRenderTarget.texture : null;
+				background = exrBackground;
+				nautilus.material.envMap = newEnvMap;
+				nautilus.material.needsUpdate = true;
+
+				scene.background = background;
+				renderer.toneMappingExposure = 0.5;
+
+				//
+
 				renderer.render( scene, camera );
 			}
 		</script>

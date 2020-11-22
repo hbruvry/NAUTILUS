@@ -28,8 +28,8 @@
 			let spiralSubdivisionMax = 1024;
 
 			const params = {
-				a: 0.5,
-				b: 1.25
+				a: 1.0,
+				b: 0.306349
 			};
 
 			init();
@@ -50,7 +50,7 @@
 				{
 					// Find trangent angle deriving the spiral equation
 					theta = i * spiralAngleStep;
-					phi = theta + Math.atan( 1.0 / Math.log( b ) ) - Math.PI / 2.0;
+					phi = theta + Math.atan( 1.0 / b ) - Math.PI / 2.0;
 
 					// Set current spiral normal
 					normals[ i * 3 ] = Math.cos( phi );
@@ -65,7 +65,8 @@
 			function setSpiralPositions( a, b, angle )
 			{
 				let positions;
-				let theta, r;
+				let theta, phi;
+				let r;
 
 				// Get spiral positions (cf. git)
 				positions = spiralLine.geometry.attributes.position.array;
@@ -73,7 +74,7 @@
 				{
 					// Find radius resolving the spiral equation
 					theta = i * spiralAngleStep;
-					r = a * Math.pow( b, theta );
+					r = a * Math.pow( 2.718281, b * theta );
 
 					// Set current spiral position
 					positions[ i * 3 ] = r * Math.cos( theta );
@@ -131,8 +132,8 @@
 			function createGUI()
 			{
 				const gui = new GUI();
-				gui.add( params, 'a', -800, 800, .01 ).onChange( function () { setSpiralAttributes() } );
-				gui.add( params, 'b', 0, 40, .01 ).onChange( function () { setSpiralAttributes() } );
+				gui.add( params, 'a', 0.0, 0.0, .000001 ).onChange( function () { setSpiralAttributes() } );
+				gui.add( params, 'b', 0.0, 1.0, .000001 ).onChange( function () { setSpiralAttributes() } );
 				gui.open();
 			}
 
@@ -141,7 +142,7 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 4000 );
-				camera.position.z = 50;
+				camera.position.z = 250;
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xf8f8ff );
