@@ -19,21 +19,20 @@
 			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
 			import { VertexNormalsHelper } from 'https://unpkg.com/three@0.121.1/examples/jsm/helpers/VertexNormalsHelper.js';
 			import { EXRLoader } from 'https://unpkg.com/three@0.121.1/examples/jsm/loaders/EXRLoader.js';
-			import { OutlineEffect } from 'https://unpkg.com/three@0.121.1/examples/jsm/effects/OutlineEffect.js';
 
 			let container, stats;
-			let camera, controls, scene, renderer, effect;
+			let camera, controls, scene, renderer;
 			let hemiLight, spotLight;
 			let debug = false;
 
 			let spiralLine, spiralHelper;
-			let spiralAngleStep = Math.PI / 45;
+			let spiralAngleStep = Math.PI / 30;
 			let spiralSubdivision = 0;
 			let spiralSubdivisionMax = 1024;
 
 			let supershapesLine = [];
 			let supershapesHelper = [];
-			let supershapeAngleStep = Math.PI / 90;
+			let supershapeAngleStep = Math.PI / 60;
 			let supershapeSubdivision = 0;
 			let supershapeSubdivisionMax = 1024;
 
@@ -113,25 +112,18 @@
 			function setNautilusMesh()
 			{
 				let nautilusGeometry, nautilusMaterial;
-				
-				const colors = new Uint8Array( 4 );
-				for ( let c = 0; c <= colors.length; c ++ )
-				{
-					colors[ c ] = ( c / colors.length ) * 256;
-				}
-				const gradientMap = new THREE.DataTexture( colors, colors.length, 1, THREE.LuminanceFormat );
-				gradientMap.minFilter = THREE.NearestFilter;
-				gradientMap.magFilter = THREE.NearestFilter;
-				gradientMap.generateMipmaps = false;
+				let texture;
 
-				const texture = new THREE.TextureLoader().load( 'diffuse.jpg' );
-
-				nautilusGeometry = new THREE.CylinderBufferGeometry( 2, 2, 8, supershapeSubdivision, spiralSubdivision - 1, true );
-				nautilusMaterial = new THREE.MeshPhysicalMaterial( { map: texture, side: THREE.DoubleSide } );
-
+				nautilusGeometry = new THREE.PlaneBufferGeometry( 2, 2, supershapeSubdivision, spiralSubdivision - 1 );
+				texture = new THREE.TextureLoader().load( 'diffuse.jpg' );
+				nautilusMaterial = new THREE.MeshStandardMaterial( { map: texture, side: THREE.DoubleSide } );
 				nautilus = new THREE.Mesh( nautilusGeometry, nautilusMaterial );
+
+				nautilus.castShadow = true; 
+				nautilus.receiveShadow = true;
 				nautilus.material.map.anisotropy = 16;
 				scene.add( nautilus );
+
 				if (debug)
 				{
 					nautilusHelper = new VertexNormalsHelper( nautilus, 0.1, 0x0000ff, 1 );
@@ -481,13 +473,7 @@
 				controls = new OrbitControls( camera, container );
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xf8f8ff );
-
-				hemiLight = new THREE.HemisphereLight( 0xffffff, 0xc0c0c0, 1.0 );
-				scene.add( hemiLight );
-
-				spotLight = new THREE.SpotLight( 0xffffff, 2.0 );
-//				scene.add( spotLight );
+				scene.background = new THREE.Color( 0x101010 );
 
 				setSpiralMesh();
 				setSpiralAttributes();
@@ -498,11 +484,29 @@
 				setNautilusMesh();
 				setNautilusAttributes();
 
+				hemiLight = new THREE.HemisphereLight( 0xffeeb1, 0x080820, 0.1 );
+				scene.add(hemiLight);
+
+				spotLight = new THREE.SpotLight( 0xffffff );
+				spotLight.position.set( -25.0, 50.0, 75.0 );
+				spotLight.castShadow = true;
+
+				spotLight.shadow.mapSize.width = 4096;
+				spotLight.shadow.mapSize.height = 4096;
+				spotLight.shadowBias = -0.001;
+				scene.add( spotLight );
+
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
-				effect = new OutlineEffect( renderer );
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+				renderer.shadowMapCullFace = THREE.CullFaceBack
+
+				renderer.shadowCameraNear = 0.1;
+				renderer.shadowCameraFar = 20000;
+				renderer.shadowCameraFov = 45;
 
 				stats = new Stats();
 				container.appendChild( renderer.domElement );
@@ -511,6 +515,9 @@
 				createGUI();
 
 				window.addEventListener( 'resize', onWindowResize, false );
+
+				const helper = new THREE.CameraHelper( spotLight.shadow.camera );
+				scene.add( helper );
 			}
 
 			function onWindowResize()
@@ -523,7 +530,6 @@
 			function animate()
 			{
 				stats.update();
-				spotLight.position.set( camera.position.x + 50.0, camera.position.y + 1000.0, camera.position.z + 50.0 );
 				requestAnimationFrame( animate );
 				controls.update();
 				render();
@@ -531,8 +537,7 @@
 
 			function render()
 			{
-				effect.render( scene, camera );
-//				renderer.render( scene, camera );
+				renderer.render( scene, camera );
 			}
 		</script>
 	</body>
