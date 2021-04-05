@@ -70,6 +70,7 @@
 				}
 				// Update supershape positions
 				supershapeLine.geometry.attributes.position.needsUpdate = true;
+				return ;
 			}
 
 			function setSupershapeNormals()
@@ -110,6 +111,7 @@
 				// Update supershape normals
 				supershapeLine.geometry.attributes.normal.needsUpdate = true;
 				supershapeHelper.update();
+				return ;
 			}
 
 			function setSupershapeAttributes()
@@ -126,6 +128,7 @@
 				// Set supershape positions and normals
 				setSupershapePositions( a, b, m, n1, n2, n3 );
 				setSupershapeNormals();
+				return ;
 			}
 
 			function setSupershapeMesh()
@@ -153,6 +156,7 @@
 
 				supershapeHelper = new VertexNormalsHelper( supershapeLine, 0.1, 0xff0000, 1 );
 				scene.add( supershapeHelper );
+				return ;
 			}
 
 			/*
@@ -171,6 +175,7 @@
 				var obj = { add:function(){ console.log("clicked") }};
 				gui.add(obj,'add');
 				gui.open();
+				return ;
 			}
 
 			function init()
@@ -197,6 +202,7 @@
 				createGUI();
 
 				window.addEventListener( 'resize', onWindowResize, false );
+				return ;
 			}
 
 			function onWindowResize()
@@ -204,6 +210,7 @@
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();	
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				return ;
 			}
 
 			function animate()
@@ -211,11 +218,13 @@
 				stats.update();
 				requestAnimationFrame( animate );
 				render();
+				return ;
 			}
 
 			function render()
 			{
 				renderer.render( scene, camera );
+				return ;
 			}
 		</script>
 	</body>

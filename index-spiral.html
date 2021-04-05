@@ -60,6 +60,7 @@
 				// Update spiral normals
 				spiralLine.geometry.attributes.normal.needsUpdate = true;
 				spiralHelper.update();
+				return ;
 			}
 
 			function setSpiralPositions( a, b, angle )
@@ -83,6 +84,7 @@
 				}
 				// Update spiral positions
 				spiralLine.geometry.attributes.position.needsUpdate = true;
+				return ;
 			}
 
 			function setSpiralAttributes()
@@ -95,6 +97,7 @@
 				// Set spiral positions and normals
 				setSpiralPositions( a, b );
 				setSpiralNormals( b );
+				return ;
 			}
 
 			function setSpiralMesh()
@@ -123,6 +126,7 @@
 				// Create spiral normal helper, add it to the scene
 				spiralHelper = new VertexNormalsHelper( spiralLine, 0.5, 0xff0000, 1 );
 				scene.add( spiralHelper );
+				return ;
 			}
 
 			/*
@@ -135,6 +139,7 @@
 				gui.add( params, 'a', 0.0, 0.0, .000001 ).onChange( function () { setSpiralAttributes() } );
 				gui.add( params, 'b', 0.0, 1.0, .000001 ).onChange( function () { setSpiralAttributes() } );
 				gui.open();
+				return ;
 			}
 
 			function init()
@@ -161,6 +166,7 @@
 				createGUI();
 
 				window.addEventListener( 'resize', onWindowResize, false );
+				return ;
 			}
 
 			function onWindowResize()
@@ -168,6 +174,7 @@
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();	
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				return ;
 			}
 
 			function animate()
@@ -175,11 +182,13 @@
 				stats.update();
 				requestAnimationFrame( animate );
 				render();
+				return ;
 			}
 
 			function render()
 			{
 				renderer.render( scene, camera );
+				return ;
 			}
 		</script>
 	</body>

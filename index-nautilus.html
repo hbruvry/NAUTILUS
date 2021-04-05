@@ -36,6 +36,8 @@
 
 			let nautilus, nautilusHelper;
 			let pngCubeRenderTarget;
+			let texturePath = '';
+//			let texturePath = 'https://www.hbruvry.com/wp-content/uploads/2021/01/';
 
 			const params = {
 				shapeRevolution: 6,
@@ -96,6 +98,7 @@
 				nautilus.geometry.attributes.position.needsUpdate = true;
 				nautilus.geometry.attributes.normal.needsUpdate = true;
 				nautilus.rotation.set( Math.PI, 0.0, 0.0 );
+				return ;
 			}
 
 			function randomizeNautilus()
@@ -104,6 +107,7 @@
 				randomizeSupershapes(0);
 				randomizeSupershapes(1);
 				updateSupershapes();
+				return ;
 			}
 
 			function setNautilusMesh()
@@ -112,13 +116,14 @@
 				let texture, normalMap;
 
 				nautilusGeometry = new THREE.PlaneBufferGeometry( 2, 2, supershapeSubdivision, spiralSubdivision - 1 );
-				texture = new THREE.TextureLoader().load( 'https://www.hbruvry.com/wp-content/uploads/2021/01/diffuse-scaled.jpg' );
-				normalMap = new THREE.TextureLoader().load( 'https://www.hbruvry.com/wp-content/uploads/2021/01/normal-scaled.jpg' );
+				texture = new THREE.TextureLoader().load( texturePath + 'diffuse.jpg' );
+				normalMap = new THREE.TextureLoader().load( texturePath + 'normal.jpg' );
 				nautilusMaterial = new THREE.MeshPhysicalMaterial( { map: texture, normalMap: normalMap, roughness: 0.125, envMapIntensity: 4.0, side: THREE.DoubleSide } );
 
 				nautilus = new THREE.Mesh( nautilusGeometry, nautilusMaterial );
 				nautilus.material.map.anisotropy = 16;
 				scene.add( nautilus );
+				return ;
 			}
 
 			/*
@@ -156,6 +161,7 @@
 				}
 				// Update supershape positions
 				supershapesLine[ index ].geometry.attributes.position.needsUpdate = true;
+				return ;
 			}
 
 			function setSupershapeNormals( index )
@@ -194,6 +200,7 @@
 				}
 				// Update supershape normals
 				supershapesLine[ index ].geometry.attributes.normal.needsUpdate = true;
+				return ;
 			}
 
 			function setSupershapesAttributes()
@@ -233,6 +240,7 @@
 					supershapesLine[ i ].rotation.set( Math.PI / 2.0, spiralAngle, Math.PI );
 					supershapesLine[ i ].position.set( spiralPositions[ j ], spiralPositions[ j + 1 ], spiralPositions[ j + 2 ] );
 				}
+				return ;
 			}
 
 			function randomizeSupershapes( i )
@@ -280,12 +288,14 @@
 					supershapeMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
 					supershapesLine.push( new THREE.Line( supershapeGeometry, supershapeMaterial ) );
 				}
+				return ;
 			}
 
 			function updateSupershapes()
 			{
 				setSupershapesAttributes();
 				setNautilusAttributes();
+				return ;
 			}
 
 			/*
@@ -314,6 +324,7 @@
 				}
 				// Update spiral normals
 				spiralLine.geometry.attributes.normal.needsUpdate = true;
+				return ;
 			}
 
 			function setSpiralPositions( a, b )
@@ -336,6 +347,7 @@
 				}
 				// Update spiral positions
 				spiralLine.geometry.attributes.position.needsUpdate = true;
+				return ;
 			}
 
 			function setSpiralAttributes()
@@ -348,6 +360,7 @@
 				// Set spiral positions and normals
 				setSpiralPositions( a, b );
 				setSpiralNormals( b );
+				return ;
 			}
 
 			function updateSpiral()
@@ -355,6 +368,7 @@
 				setSpiralAttributes();
 				setSupershapesAttributes();
 				setNautilusAttributes();
+				return ;
 			}
 
 			function setSpiralMesh()
@@ -377,6 +391,7 @@
 				// Create spiral material, add spiral line object to the scene
 				spiralMaterial = new THREE.LineBasicMaterial( { color: 0x5050ff, linewidth: 2 } );
 				spiralLine = new THREE.Line( spiralGeometry, spiralMaterial );
+				return ;
 			}
 
 			/*
@@ -387,7 +402,7 @@
 			{
 				let gui;
 				let folderNautilus, folderSpiral, folderSupershapeA, folderSupershapeB;
-				var randomize;
+				let randomize;
 
 				gui = new GUI();
 				document.getElementById('gui-container').appendChild(gui.domElement);
@@ -423,6 +438,7 @@
 				folderSpiral = gui.addFolder( 'Spiral' );
 				folderSpiral.add( params, 'spiralA', 0, 8.0, .001 ).name( 'a' ).onChange( function () { updateSpiral() } );
 				folderSpiral.add( params, 'spiralB', 0, 8.0, .001 ).name( 'b' ).onChange( function () { updateSpiral() } );
+				return ;
 			}
 
 			/*
@@ -433,7 +449,7 @@
 			{
 				container = document.getElementById( 'container' );
 
-				camera = new THREE.PerspectiveCamera( 27, container.clientWidth / container.clientHeight, 1, 5000 );
+				camera = new THREE.PerspectiveCamera( 30, container.clientWidth / container.clientHeight, 1, 5000 );
 				camera.position.z = 120;
 				controls = new OrbitControls( camera, container );
 
@@ -450,7 +466,7 @@
 
 				THREE.DefaultLoadingManager.onLoad = function ( ) { pmremGenerator.dispose(); };
 
-				new THREE.TextureLoader().load( 'https://www.hbruvry.com/wp-content/uploads/2021/01/environment.png', function ( texture ) {
+				new THREE.TextureLoader().load( texturePath + 'environment.png', function ( texture ) {
 					texture.encoding = THREE.sRGBEncoding;
 					pngCubeRenderTarget = pmremGenerator.fromEquirectangular( texture );
 					texture.dispose();
@@ -471,6 +487,7 @@
 				container.appendChild( renderer.domElement );
 
 				window.addEventListener( 'resize', onWindowResize, false );
+				return ;
 			}
 
 			function onWindowResize()
@@ -478,6 +495,7 @@
 				camera.aspect = container.clientWidth / container.clientHeight;
 				camera.updateProjectionMatrix();	
 				renderer.setSize( container.clientWidth, container.clientHeight );
+				return ;
 			}
 
 			function animate()
@@ -486,6 +504,7 @@
 				nautilus.rotation.y += 0.005;
 				controls.update();
 				render();
+				return ;
 			}
 
 			function render()
@@ -498,6 +517,7 @@
 				nautilus.material.needsUpdate = true;
 
 				effect.render( scene, camera );
+				return ;
 			}
 
 			window.addEventListener('sempliceTransitionInDone', function (e) {
@@ -506,6 +526,7 @@
 				camera.aspect = container.clientWidth / container.clientHeight;
 				camera.updateProjectionMatrix();	
 				renderer.setSize( container.clientWidth, container.clientHeight );
+				return ;
 			}, false);
 		</script>
 	</body>
