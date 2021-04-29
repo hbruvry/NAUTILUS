@@ -10,12 +10,13 @@
 		</style>
 	</head>
 	<body>
-		<div id="container"></div>
+		<div id="container-supershape" class="column-content" style="display: block; width: 100%; height: 265px;"></div>
+		<div id="gui-container-supershape" style="position: absolute; top: 0px; left: 0px; z-index: 10;"></div>
+
 		<script type="module">
 			import * as THREE from 'https://unpkg.com/three@0.121.1/build/three.module.js';
 			import { OrbitControls } from 'https://unpkg.com/three@0.121.1/examples/jsm/controls/OrbitControls.js';
 			import { MathUtils } from 'https://unpkg.com/three@0.121.1/build/three.module.js';
-			import Stats from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/stats.module.js';
 			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
 			import { VertexNormalsHelper } from 'https://unpkg.com/three@0.121.1/examples/jsm/helpers/VertexNormalsHelper.js';
 
@@ -23,7 +24,7 @@
 			let camera, controls, scene, renderer;
 
 			let supershapeLine, supershapeHelper;
-			let supershapeAngleStep = Math.PI / 180;
+			let supershapeAngleStep = Math.PI / 90;
 			let supershapeSubdivision = 0;
 			let supershapeSubdivisionMax = 2048;
 
@@ -166,24 +167,24 @@
 			function createGUI()
 			{
 				const gui = new GUI();
+				document.getElementById('gui-container-supershape').appendChild(gui.domElement);
 				gui.add( params, 'a', 0, 800, .1 ).onChange( function () { setSupershapeAttributes() } );
 				gui.add( params, 'b', 0, 800, .1 ).onChange( function () { setSupershapeAttributes() } );
 				gui.add( params, 'm', 0, 32, 1. ).onChange( function () { setSupershapeAttributes() } );
 				gui.add( params, 'n1', -40, 40, .1 ).onChange( function () { setSupershapeAttributes() } );
 				gui.add( params, 'n2', -40, 40, .1 ).onChange( function () { setSupershapeAttributes() } );
 				gui.add( params, 'n3', -40, 40, .1 ).onChange( function () { setSupershapeAttributes() } );
-				var obj = { add:function(){ console.log("clicked") }};
-				gui.add(obj,'add');
-				gui.open();
+				gui.close();
 				return ;
 			}
 
 			function init()
 			{
-				container = document.getElementById( 'container' );
+				container = document.getElementById( 'container-supershape' );
 
-				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 4000 );
-				camera.position.z = 10;
+				camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 1, 4000 );
+				camera.position.z = 5;
+				controls = new OrbitControls( camera, container );
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xf8f8ff );
@@ -193,11 +194,9 @@
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setSize( container.clientWidth, container.clientHeight );
 
-				stats = new Stats();
 				container.appendChild( renderer.domElement );
-				container.appendChild( stats.dom );
 
 				createGUI();
 
@@ -207,15 +206,14 @@
 
 			function onWindowResize()
 			{
-				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.aspect = container.clientWidth / container.clientHeight;
 				camera.updateProjectionMatrix();	
-				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setSize( container.clientWidth, container.clientHeight );
 				return ;
 			}
 
 			function animate()
 			{
-				stats.update();
 				requestAnimationFrame( animate );
 				render();
 				return ;

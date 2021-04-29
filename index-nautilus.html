@@ -11,11 +11,12 @@
 	</head>
 	<body>
 		<div id="container" class="column-content" style="display: block; width: 100%; height: 620px;"></div>
-		<div id="gui-container" style="position: absolute; top: 0px; left: 0px; z-index: 10;"></div>
+		<div id="gui-container" style="position: absolute; top: 0px; left: 0px; z-index: 10; width: 100%; height: 620px;"></div>
 		
 		<script async type="module">
 			import * as THREE from 'https://unpkg.com/three@0.121.1/build/three.module.js';
 			import { OrbitControls } from 'https://unpkg.com/three@0.121.1/examples/jsm/controls/OrbitControls.js';
+			import Stats from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/stats.module.js';
 			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
 			import { MathUtils } from 'https://unpkg.com/three@0.121.1/build/three.module.js';
 			import { VertexNormalsHelper } from 'https://unpkg.com/three@0.121.1/examples/jsm/helpers/VertexNormalsHelper.js';
@@ -23,7 +24,7 @@
 			import { OutlineEffect } from 'https://unpkg.com/three@0.121.1/examples/jsm/effects/OutlineEffect.js';
 
 			let container;
-			let camera, controls, scene, renderer, effect;
+			let camera, scene, renderer, stats, controls, effect;
 			let hemiLight;
 
 			let spiralLine;
@@ -36,8 +37,8 @@
 
 			let nautilus, nautilusHelper;
 			let pngCubeRenderTarget;
-			let texturePath = '';
-//			let texturePath = 'https://www.hbruvry.com/wp-content/uploads/2021/01/';
+//			let texturePath = '';
+			let texturePath = 'https://www.hbruvry.com/wp-content/uploads/2021/01/';
 
 			const params = {
 				shapeRevolution: 6,
@@ -456,6 +457,9 @@
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xf8f8ff );
 
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
 				setSpiralMesh();
 				setSpiralAttributes();
 				setSupershapesMesh();
@@ -503,6 +507,7 @@
 				requestAnimationFrame( animate );
 				nautilus.rotation.y += 0.005;
 				controls.update();
+				stats.update();
 				render();
 				return ;
 			}
