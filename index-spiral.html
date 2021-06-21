@@ -137,7 +137,7 @@
 			function createGUI()
 			{
 				const gui = new GUI();
-				document.getElementById('gui-container-spiral').appendChild(gui.domElement);
+				document.getElementById( 'gui-container-spiral' ).appendChild( gui.domElement );
 				gui.add( params, 'a', 0.0, 1.0, .000001 ).onChange( function () { setSpiralAttributes() } );
 				gui.add( params, 'b', 0.0, 1.0, .000001 ).onChange( function () { setSpiralAttributes() } );
 				gui.close();
