@@ -27,11 +27,11 @@
 			let camera, scene, renderer, stats, controls, effect;
 
 			let spiralLine;
-			let spiralAngleStep = Math.PI / 90;
+			let spiralAngleStep = Math.PI / 90.0;
 			let spiralSubdivision = 0;
 
 			let supershapesLine = [];
-			let supershapeAngleStep = Math.PI / 180;
+			let supershapeAngleStep = Math.PI / 180.0;
 			let supershapeSubdivision = 0;
 
 			let nautilus, nautilusHelper;
@@ -450,7 +450,7 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.PerspectiveCamera( 30, container.clientWidth / container.clientHeight, 1, 5000 );
-				camera.position.z = 120;
+				camera.position.z = 120.0;
 				controls = new OrbitControls( camera, container );
 
 				scene = new THREE.Scene();
