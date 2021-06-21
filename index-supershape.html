@@ -167,7 +167,7 @@
 			function createGUI()
 			{
 				const gui = new GUI();
-				document.getElementById('gui-container-supershape').appendChild(gui.domElement);
+				document.getElementById( 'gui-container-supershape' ).appendChild( gui.domElement );
 				gui.add( params, 'a', 0, 800, .1 ).onChange( function () { setSupershapeAttributes() } );
 				gui.add( params, 'b', 0, 800, .1 ).onChange( function () { setSupershapeAttributes() } );
 				gui.add( params, 'm', 0, 32, 1. ).onChange( function () { setSupershapeAttributes() } );
