@@ -212,16 +212,16 @@
 				return ;
 			}
 
+			function render()
+			{
+				renderer.render( scene, camera );
+				return ;
+			}
+			
 			function animate()
 			{
 				requestAnimationFrame( animate );
 				render();
-				return ;
-			}
-
-			function render()
-			{
-				renderer.render( scene, camera );
 				return ;
 			}
 		</script>
