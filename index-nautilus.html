@@ -405,7 +405,7 @@
 				let randomize;
 
 				gui = new GUI();
-				document.getElementById('gui-container').appendChild(gui.domElement);
+				document.getElementById( 'gui-container' ).appendChild( gui.domElement );
 				// Set nautilus folder and parameters
 				folderNautilus = gui.addFolder( 'Nautilus' );
 				folderNautilus.add( params, 'shapeRevolution', 1, 32, 1. ).name( 'revolutions' ).listen().onChange( function () { updateSupershapes() } );
