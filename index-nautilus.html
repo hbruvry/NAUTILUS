@@ -502,16 +502,6 @@
 				return ;
 			}
 
-			function animate()
-			{
-				requestAnimationFrame( animate );
-				nautilus.rotation.y += 0.005;
-				controls.update();
-				stats.update();
-				render();
-				return ;
-			}
-
 			function render()
 			{
 				let newEnvMap;
@@ -522,6 +512,16 @@
 				nautilus.material.needsUpdate = true;
 
 				effect.render( scene, camera );
+				return ;
+			}
+			
+			function animate()
+			{
+				requestAnimationFrame( animate );
+				nautilus.rotation.y += 0.005;
+				controls.update();
+				stats.update();
+				render();
 				return ;
 			}
 
