@@ -469,11 +469,11 @@
 
 				THREE.DefaultLoadingManager.onLoad = function ( ) { pmremGenerator.dispose(); };
 
-				new THREE.TextureLoader().load( texturePath + 'environment.png', function ( texture ) {
+				new THREE.TextureLoader().load( texturePath + 'environment.png', function ( texture )
+				{
 					texture.encoding = THREE.sRGBEncoding;
 					pngCubeRenderTarget = pmremGenerator.fromEquirectangular( texture );
 					texture.dispose();
-
 				} );
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
